@@ -155,7 +155,8 @@ pdf: ## Genera el PDF de entrega desde los documentos de docs/
 	@$(DOCKER) run --rm -v "$$PWD":/w -w /w python:3.13-slim sh -c \
 	  "pip install --quiet markdown 2>/dev/null && python3 scripts/build-pdf.py /w/entrega/assets /w/entrega/entrega.html"
 	@echo "==> 3/3 Generando el PDF con WeasyPrint"
-	@$(DOCKER) run --rm -v "$$PWD":/w -w /w ghcr.io/weasyprint/weasyprint \
+	@$(DOCKER) build -q -f scripts/pdf-renderer.Dockerfile -t lpa-pdf-renderer . >/dev/null
+	@$(DOCKER) run --rm -v "$$PWD":/w -w /w lpa-pdf-renderer \
 	  /w/entrega/entrega.html /w/entrega/Taller-Microservicios-LPA2.pdf 2>/dev/null
 	@echo "  [OK] entrega/Taller-Microservicios-LPA2.pdf"
 

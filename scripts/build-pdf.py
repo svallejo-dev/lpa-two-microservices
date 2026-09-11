@@ -21,9 +21,15 @@ DOCS = RAIZ / "docs"
 ASSETS = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "entrega" / "assets"
 
 REPO_URL = "https://github.com/svallejo-dev/lpa-two-microservices"
+
+# --- Datos de la portada (normas APA 7, formato de trabajo de estudiante) ---
+TITULO = "Arquitectura Orientada a Microservicios"
 ESTUDIANTE = "Sebastián Vallejo"
+PROGRAMA = "Ingeniería de Sistemas Mod. Virtual"
+UNIVERSIDAD = "Uniremington"
 MATERIA = "Lenguaje de Programación Avanzado 2"
-FECHA = "11 de septiembre de 2026"
+DOCENTE = "Nixon Duarte Acosta"
+ANIO = "2026"
 
 # Marcador que el estudiante reemplaza cuando publique la sustentación.
 VIDEO_URL = ""
@@ -71,15 +77,20 @@ CSS = """
   size: A4;
   margin: 20mm 18mm 20mm 18mm;
   @top-left  { content: string(seccion); font: 7.5pt "DejaVu Sans"; color: #8a8f98; }
-  @top-right { content: "Taller de microservicios · LPA2"; font: 7.5pt "DejaVu Sans"; color: #8a8f98; }
-  @bottom-right { content: counter(page); font: 8pt "DejaVu Sans"; color: #6b7280; }
+  @top-right { content: counter(page); font: 9pt "Liberation Serif", serif; color: #4b5563; }
 }
-@page portada { margin: 0; @top-left { content: none } @top-right { content: none }
-                @bottom-right { content: none } }
+
+/* Portada segun APA 7: margenes de una pulgada, numero de pagina arriba a la
+   derecha y nada mas en el encabezado. */
+@page portada {
+  margin: 2.54cm;
+  @top-left { content: none }
+  @top-right { content: counter(page); font: 12pt "Liberation Serif", serif; color: #000; }
+}
 
 html { font-size: 10pt; }
-body { font-family: "DejaVu Serif", serif; color: #1a1d21; line-height: 1.5;
-       text-align: justify; hyphens: auto; }
+body { font-family: "Liberation Serif", "Times New Roman", serif; color: #1a1d21;
+       line-height: 1.55; text-align: justify; hyphens: auto; }
 
 h1, h2, h3, h4 { font-family: "DejaVu Sans", sans-serif; color: #14312a;
                  text-align: left; hyphens: none; }
@@ -92,22 +103,18 @@ code { font-family: "DejaVu Sans Mono", monospace; font-size: .82em;
        background: #eef0f2; padding: .08em .3em; border-radius: 2px; }
 strong { color: #0d211c; }
 
-/* --- Portada ---------------------------------------------------------- */
-.portada { page: portada; height: 297mm; padding: 42mm 24mm 20mm;
-           display: block; page-break-after: always; }
-.portada .barra { width: 46mm; height: 3.5pt; background: #14312a; margin-bottom: 12mm; }
-.portada .materia { font-family: "DejaVu Sans", sans-serif; font-size: 9.5pt;
-                    letter-spacing: .13em; text-transform: uppercase; color: #4b5563; }
-.portada h1 { font-size: 27pt; line-height: 1.14; margin: 5mm 0 3mm; string-set: none; }
-.portada .sub { font-size: 12.5pt; color: #4b5563; margin: 0 0 22mm; }
-.portada dl { font-size: 10pt; margin: 0; }
-.portada dt { font-family: "DejaVu Sans", sans-serif; font-size: 7.5pt;
-              text-transform: uppercase; letter-spacing: .09em; color: #8a8f98;
-              margin-top: 5.5mm; }
-.portada dd { margin: .6mm 0 0; }
-.portada .pie { position: absolute; bottom: 20mm; left: 24mm; right: 24mm;
-                font-size: 8.5pt; color: #6b7280; border-top: .5pt solid #d7dade;
-                padding-top: 3mm; }
+/* --- Portada (APA 7) --------------------------------------------------- */
+/* Todo centrado y a doble espacio, en Times New Roman de 12 pt. El titulo va
+   en negrita a unas tres lineas por debajo del margen superior; el resto de
+   los datos, sin negrita, en el orden que fija la norma: autor, afiliacion,
+   asignatura, docente y fecha. */
+.portada { page: portada; page-break-after: always;
+           font-family: "Liberation Serif", "Times New Roman", serif;
+           font-size: 12pt; line-height: 2; text-align: center;
+           hyphens: none; color: #000; padding-top: 2.54cm; }
+.portada p { margin: 0; text-align: center; }
+.portada .titulo { font-weight: bold; }
+.portada .vacio { height: 24pt; }
 
 /* --- Indice ------------------------------------------------------------ */
 .indice { page-break-after: always; }
@@ -117,7 +124,7 @@ strong { color: #0d211c; }
              border-bottom: .5pt dotted #d7dade; }
 .indice li::before { content: counter(sec) ". "; color: #14312a; font-weight: bold; }
 .indice li span { color: #6b7280; font-size: 8.5pt; display: block;
-                  margin-left: 5.5mm; font-family: "DejaVu Serif", serif; }
+                  margin-left: 5.5mm; font-family: "Liberation Serif", serif; }
 
 /* --- Secciones --------------------------------------------------------- */
 section { page-break-before: always; }
@@ -317,22 +324,13 @@ HTML = f"""<!doctype html>
 <style>{CSS}</style></head><body>
 
 <div class="portada">
-  <div class="barra"></div>
-  <p class="materia">{MATERIA}</p>
-  <h1>Arquitectura orientada<br>a microservicios</h1>
-  <p class="sub">Fundamentos, comparación con la arquitectura monolítica<br>
-  y ejercicio práctico con dos servicios comunicados por REST</p>
-
-  <dl>
-    <dt>Estudiante</dt><dd>{ESTUDIANTE}</dd>
-    <dt>Asignatura</dt><dd>{MATERIA}</dd>
-    <dt>Repositorio</dt><dd>{REPO_URL}</dd>
-    <dt>Fecha</dt><dd>{FECHA}</dd>
-  </dl>
-
-  <p class="pie">Servicio de Usuarios en Python&nbsp;3.13 con FastAPI &nbsp;·&nbsp;
-  Servicio de Pedidos en TypeScript sobre Bun&nbsp;1.4 &nbsp;·&nbsp;
-  Una base de datos PostgreSQL por servicio &nbsp;·&nbsp; Docker Compose</p>
+  <p class="titulo">{TITULO}</p>
+  <p class="vacio">&nbsp;</p>
+  <p>{ESTUDIANTE}</p>
+  <p>{PROGRAMA}, {UNIVERSIDAD}</p>
+  <p>{MATERIA}</p>
+  <p>{DOCENTE}</p>
+  <p>{ANIO}</p>
 </div>
 
 <div class="indice">
