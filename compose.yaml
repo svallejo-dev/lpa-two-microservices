@@ -1,0 +1,120 @@
+# ---------------------------------------------------------------------------
+# Taller LPA2 - Arquitectura de microservicios
+#
+# Cinco contenedores. Cada microservicio tiene SU PROPIA base de datos y no
+# puede ver la del otro: el patron "database per service". La unica forma de
+# que Pedidos conozca un usuario es preguntandoselo a Usuarios por HTTP.
+# ---------------------------------------------------------------------------
+name: lpa-microservicios
+
+services:
+  # --- Base de datos privada del Servicio de Usuarios -----------------------
+  users-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${USERS_DB_NAME:-users_db}
+      POSTGRES_USER: ${USERS_DB_USER:-users_app}
+      POSTGRES_PASSWORD: ${USERS_DB_PASSWORD:-users_secret}
+    volumes:
+      - users_db_data:/var/lib/postgresql/data
+      - ./services/users-service/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    networks: [users-data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${USERS_DB_USER:-users_app} -d ${USERS_DB_NAME:-users_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  # --- Servicio de Usuarios (Python + FastAPI) ------------------------------
+  users-service:
+    build:
+      context: ./services/users-service
+      target: runtime
+    environment:
+      DATABASE_URL: postgres://${USERS_DB_USER:-users_app}:${USERS_DB_PASSWORD:-users_secret}@users-db:5432/${USERS_DB_NAME:-users_db}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${USERS_SERVICE_PORT:-8001}:8000"
+    networks: [users-data, services]
+    depends_on:
+      users-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  # --- Base de datos privada del Servicio de Pedidos ------------------------
+  orders-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${ORDERS_DB_NAME:-orders_db}
+      POSTGRES_USER: ${ORDERS_DB_USER:-orders_app}
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD:-orders_secret}
+    volumes:
+      - orders_db_data:/var/lib/postgresql/data
+      - ./services/orders-service/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    networks: [orders-data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${ORDERS_DB_USER:-orders_app} -d ${ORDERS_DB_NAME:-orders_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  # --- Servicio de Pedidos (TypeScript + Bun) -------------------------------
+  orders-service:
+    build:
+      context: ./services/orders-service
+      target: runtime
+    environment:
+      DATABASE_URL: postgres://${ORDERS_DB_USER:-orders_app}:${ORDERS_DB_PASSWORD:-orders_secret}@orders-db:5432/${ORDERS_DB_NAME:-orders_db}
+      USERS_SERVICE_URL: ${USERS_SERVICE_URL:-http://users-service:8000}
+      USER_DIRECTORY_TIMEOUT_MS: ${USER_DIRECTORY_TIMEOUT_MS:-2000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${ORDERS_SERVICE_PORT:-8002}:8000"
+    networks: [orders-data, services]
+    depends_on:
+      orders-db:
+        condition: service_healthy
+      # Dependencia entre microservicios: Pedidos necesita a Usuarios para
+      # validar. `required: false` permite levantar Pedidos aislado
+      # (`make up-orders-solo`) y demostrar la degradacion controlada a 503.
+      users-service:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+# ---------------------------------------------------------------------------
+# Redes: el aislamiento de datos no se deja a la buena voluntad del codigo.
+#
+#   users-data  -> solo users-service y su base
+#   orders-data -> solo orders-service y su base
+#   services    -> unico canal entre los dos microservicios (HTTP)
+#
+# Consecuencia: orders-service NO TIENE RUTA DE RED hacia users-db. Aunque
+# alguien escribiera la cadena de conexion correcta en el codigo, el paquete
+# no llegaria. La frontera del microservicio es fisica, no una convencion.
+# Las redes de datos son `internal`: sin salida a internet.
+# ---------------------------------------------------------------------------
+networks:
+  users-data:
+    internal: true
+  orders-data:
+    internal: true
+  services:
+
+volumes:
+  users_db_data:
+  orders_db_data:

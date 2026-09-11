@@ -1,0 +1,24 @@
+# Entorno local
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Node / Bun
+node_modules/
+bun.lockb
+*.tsbuildinfo
+
+# Editores / SO
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Artefactos
+*.log
