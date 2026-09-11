@@ -1,0 +1,233 @@
+###############################################################################
+# Taller LPA2 - Peticiones de ejemplo
+#
+# Ejecutables directamente desde VS Code (extension "REST Client") o desde
+# JetBrains (soporte nativo de archivos .http): aparece un boton "Send Request"
+# sobre cada bloque.
+#
+# Requisito previo:  make up
+#
+# Estan en orden narrativo: siga los bloques de arriba hacia abajo para
+# recorrer todo el comportamiento del sistema, incluidos los fallos.
+###############################################################################
+
+@users  = http://localhost:8001
+@orders = http://localhost:8002
+
+
+### ===========================================================================
+### 0. SALUD
+### ===========================================================================
+
+### 0.1 Liveness de Usuarios -> 200
+GET {{users}}/health
+
+### 0.2 Readiness de Usuarios (comprueba su base de datos) -> 200
+GET {{users}}/health/ready
+
+### 0.3 Readiness de Pedidos (comprueba su base Y el Servicio de Usuarios) -> 200
+# Reporta cada dependencia por separado: si algo falla, dice cual.
+GET {{orders}}/health/ready
+
+
+### ===========================================================================
+### 1. SERVICIO DE USUARIOS  (Python + FastAPI)
+### ===========================================================================
+
+### 1.1 Registrar un usuario -> 201
+# Copie el "id" de la respuesta a la variable @userId de mas abajo.
+POST {{users}}/users
+Content-Type: application/json
+
+{
+  "name": "Sebastian Vallejo",
+  "email": "sebastian@example.com"
+}
+
+### 1.2 El mismo correo, con otra capitalizacion -> 409 duplicate_email
+# El dominio normaliza el correo a minusculas antes de comparar.
+POST {{users}}/users
+Content-Type: application/json
+
+{
+  "name": "Otro Sebastian",
+  "email": "SEBASTIAN@EXAMPLE.COM"
+}
+
+### 1.3 Correo con formato invalido -> 400 invalid_email
+# La validacion NO la hace Pydantic: la hace la entidad User en el dominio.
+POST {{users}}/users
+Content-Type: application/json
+
+{
+  "name": "Ana",
+  "email": "esto-no-es-un-correo"
+}
+
+### 1.4 Nombre vacio -> 400 empty_name
+POST {{users}}/users
+Content-Type: application/json
+
+{
+  "name": "   ",
+  "email": "ana@example.com"
+}
+
+### 1.5 Listar usuarios -> 200
+GET {{users}}/users?limit=10&offset=0
+
+### 1.6 Usuario inexistente -> 404 user_not_found
+GET {{users}}/users/00000000-0000-0000-0000-000000000000
+
+
+### ===========================================================================
+### 2. SERVICIO DE PEDIDOS  (TypeScript + Bun)
+###
+### <<< PEGUE AQUI el id devuelto en el paso 1.1 >>>
+### ===========================================================================
+
+@userId = 00000000-0000-0000-0000-000000000000
+
+### 2.1 Crear un pedido -> 201
+# Aqui ocurre la comunicacion entre microservicios: antes de insertar, Pedidos
+# hace GET {{users}}/users/{{userId}} para comprobar que el usuario existe.
+#
+# Observe la respuesta: el "total" (54000) lo calculo el dominio sumando los
+# subtotales. El cliente nunca envio un total, y por eso no puede falsearlo.
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "{{userId}}",
+  "items": [
+    { "sku": "TECLADO-MEC", "quantity": 2, "unit_price": 15000 },
+    { "sku": "MOUSE-INAL",  "quantity": 3, "unit_price":  8000 }
+  ]
+}
+
+### 2.2 Listar los pedidos de ese usuario -> 200
+GET {{orders}}/orders?user_id={{userId}}
+
+### 2.3 Listar todos los pedidos -> 200
+GET {{orders}}/orders?limit=10&offset=0
+
+### 2.4 Pedido inexistente -> 404 order_not_found
+GET {{orders}}/orders/00000000-0000-0000-0000-000000000000
+
+
+### ===========================================================================
+### 3. ERRORES DE NEGOCIO  (el cliente debe corregir sus datos)
+### ===========================================================================
+
+### 3.1 Usuario que no existe -> 422 unknown_user
+# Usuarios responde 404; Pedidos lo traduce a 422. Es una respuesta CONFIRMADA:
+# sabemos con certeza que ese usuario no esta registrado.
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "00000000-0000-0000-0000-000000000000",
+  "items": [{ "sku": "SSD-1TB", "quantity": 1, "unit_price": 250000 }]
+}
+
+### 3.2 Pedido sin lineas -> 400 empty_order
+# Se rechaza en el dominio, SIN gastar una llamada de red al otro servicio.
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "{{userId}}",
+  "items": []
+}
+
+### 3.3 Cantidad no valida -> 400 invalid_quantity
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "{{userId}}",
+  "items": [{ "sku": "SSD-1TB", "quantity": 0, "unit_price": 250000 }]
+}
+
+### 3.4 Precio con decimales -> 400 invalid_price
+# Los importes se manejan como enteros en la minima unidad monetaria: sumar
+# dinero en coma flotante acumula errores de redondeo.
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "{{userId}}",
+  "items": [{ "sku": "SSD-1TB", "quantity": 1, "unit_price": 250000.75 }]
+}
+
+### 3.5 user_id que no es un UUID -> 400 invalid_user_id
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "pepito",
+  "items": [{ "sku": "SSD-1TB", "quantity": 1, "unit_price": 250000 }]
+}
+
+
+### ===========================================================================
+### 4. FALLO DE INFRAESTRUCTURA  (no es culpa del cliente)
+###
+### Ejecute primero en una terminal:
+###     docker compose stop users-service
+### ===========================================================================
+
+### 4.1 Crear un pedido con el Servicio de Usuarios caido -> 503
+# El usuario de {{userId}} SI existe, pero no hay forma de comprobarlo.
+#
+# Responde 503 y no 4xx, porque el problema no son los datos del cliente. Trae
+# la cabecera Retry-After. Y lo mas importante: el pedido NO se guardo. Ante la
+# duda, el sistema no inventa datos.
+POST {{orders}}/orders
+Content-Type: application/json
+
+{
+  "user_id": "{{userId}}",
+  "items": [{ "sku": "SSD-1TB", "quantity": 1, "unit_price": 250000 }]
+}
+
+### 4.2 Readiness durante el fallo -> 503 "degraded"
+# Dice exactamente cual dependencia fallo: database ok, users_service unreachable.
+GET {{orders}}/health/ready
+
+### 4.3 Las lecturas SIGUEN funcionando -> 200
+# El fallo esta acotado: no tumba el servicio entero, solo la operacion que
+# realmente necesitaba al otro servicio.
+GET {{orders}}/orders
+
+### ===========================================================================
+### 5. EL CONTRATO  (API Design First)
+### ===========================================================================
+
+### 5.1 El contrato de Pedidos, tal como se versiona en git -> 200
+# Escrito a MANO. No lo genera ningun framework: es la fuente de verdad y el
+# codigo debe cumplirlo (tests/openapi.test.ts falla si se desvian).
+GET {{orders}}/openapi.yaml
+
+### 5.2 El mismo contrato en JSON -> 200
+# Es lo que consumen los renderizadores y los generadores de clientes.
+GET {{orders}}/openapi.json
+
+### 5.3 El contrato de Usuarios, GENERADO por FastAPI -> 200
+# El contraste: aqui manda el codigo y el spec es un subproducto (code first).
+GET {{users}}/openapi.json
+
+### 5.4 Comparativa de renderizadores (abrir en el navegador)
+# Cinco renderizadores leyendo el MISMO /openapi.json:
+#   {{orders}}/docs/scalar     {{orders}}/docs/redoc
+#   {{orders}}/docs/rapidoc    {{orders}}/docs/elements
+#   {{orders}}/docs/swagger
+GET {{orders}}/docs
+
+
+###############################################################################
+# Para restaurar:   docker compose start users-service
+# El paso 4.1 vuelve a devolver 201 sin cambiar nada del lado del cliente.
+#
+# Todo este recorrido esta automatizado en:   make demo   y   make demo-fallo
+###############################################################################
