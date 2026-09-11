@@ -1,0 +1,18 @@
+{
+  "name": "orders-service",
+  "version": "1.0.0",
+  "description": "Microservicio de Pedidos - Taller LPA2",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

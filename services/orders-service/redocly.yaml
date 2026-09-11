@@ -1,0 +1,30 @@
+# ---------------------------------------------------------------------------
+# Gobierno del contrato (Redocly CLI).
+#
+# Un estandar sin herramienta que lo haga cumplir es un PDF que nadie lee.
+# Este archivo define QUE reglas de estilo se exigen sobre `openapi.yaml`, y
+# deja por escrito cuales se relajan y por que. Se ejecuta con `make api-lint`.
+# ---------------------------------------------------------------------------
+extends:
+  - recommended
+
+rules:
+  # Cada operacion debe estar descrita, agrupada y con ejemplos utiles.
+  operation-operationId: error
+  operation-summary: error
+  operation-description: error
+  operation-tag-defined: error
+  tag-description: error
+
+  # Se relajan tres reglas, con motivo explicito:
+
+  # `localhost` es la URL correcta para un taller que se levanta con `make up`.
+  no-server-example.com: off
+
+  # Proyecto academico: no se declara una licencia que no existe.
+  info-license: off
+
+  # La regla exige un 4xx en toda operacion. `/health`, `/health/ready` y
+  # `GET /orders` no producen ninguno: documentar un codigo que el servicio
+  # nunca devuelve haria que el contrato mintiera, que es peor que la falta.
+  operation-4xx-response: off

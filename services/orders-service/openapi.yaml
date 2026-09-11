@@ -1,0 +1,481 @@
+# ===========================================================================
+#  CONTRATO del Servicio de Pedidos  ·  OpenAPI 3.1.0
+#
+#  Este archivo esta ESCRITO A MANO y es la fuente de verdad de la API.
+#  No lo genera ningun framework a partir del codigo: es al reves, el codigo
+#  debe cumplirlo. `tests/openapi.test.ts` falla si ambos se desvian.
+#
+#  Contraste deliberado dentro de este mismo repositorio:
+#    - Servicio de Usuarios (FastAPI) -> CODE FIRST: el spec es un subproducto
+#      generado en /openapi.json a partir de las anotaciones del codigo.
+#    - Servicio de Pedidos (este)     -> DESIGN FIRST: el spec se escribe
+#      primero y el codigo se valida contra el.
+# ===========================================================================
+openapi: 3.1.0
+
+info:
+  title: Servicio de Pedidos
+  version: 1.0.0
+  summary: Microservicio de pedidos del taller de microservicios (LPA2).
+  description: |
+    Microservicio propietario de los pedidos. **No posee los datos de los
+    usuarios**: su base de datos no contiene la tabla `users` y no tiene ruta
+    de red hacia la base del Servicio de Usuarios.
+
+    Por eso, antes de crear un pedido consulta por HTTP
+    `GET /users/{id}` en el Servicio de Usuarios. Esa llamada es la unica
+    dependencia entre los dos microservicios, y explica la parte mas
+    importante de este contrato: **la distincion entre `422` y `503`**.
+
+    | Situacion | Lo que se sabe | Codigo | Que debe hacer el cliente |
+    |---|---|---|---|
+    | El Servicio de Usuarios responde `404` | El usuario **no existe** | `422` | Corregir el `user_id` |
+    | El Servicio de Usuarios no responde | **No se sabe** si existe | `503` | Reintentar mas tarde |
+
+    Colapsar ambos casos en un `400` haria que el sistema rechazara pedidos de
+    usuarios validos cada vez que la red fallara, culpando al cliente de un
+    fallo propio.
+
+    ### Importes
+    Todos los importes son **enteros en la minima unidad monetaria** (por
+    ejemplo, pesos sin decimales). Nunca decimales: sumar dinero en coma
+    flotante acumula errores de redondeo.
+
+    ### Calculo del total
+    El campo `total` **no se envia**: lo calcula el servidor sumando los
+    subtotales de cada linea. Por construccion, un cliente no puede declarar
+    cuanto cuesta su propio pedido.
+  contact:
+    name: Taller LPA2 - Lenguaje de Programacion Avanzado 2
+
+# Esta API no exige autenticacion. `security: []` lo dice de forma explicita
+# en lugar de dejarlo ambiguo por omision: es un ejercicio academico y los dos
+# servicios viven en una red privada de Docker. En un sistema real este es
+# justamente el punto donde se declararia el esquema (OAuth2, mTLS, API key).
+security: []
+
+servers:
+  - url: http://localhost:8002
+    description: Entorno local levantado con `make up`
+  - url: http://orders-service:8000
+    description: Nombre DNS dentro de la red interna de Docker Compose
+
+tags:
+  - name: pedidos
+    description: Creacion y consulta de pedidos.
+  - name: salud
+    description: |
+      Sondas de estado. `/health` responde "el proceso vive" (liveness) y
+      `/health/ready` responde "puedo atender ahora" (readiness), incluyendo
+      el estado de cada dependencia.
+
+paths:
+  /health:
+    get:
+      tags: [salud]
+      summary: Liveness
+      description: Responde si el proceso esta vivo. No consulta dependencias.
+      operationId: getHealth
+      responses:
+        "200":
+          description: El proceso esta vivo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /health/ready:
+    get:
+      tags: [salud]
+      summary: Readiness
+      description: |
+        Comprueba las **dos** dependencias del servicio y reporta cada una por
+        separado, de modo que se pueda saber de un vistazo cual fallo.
+      operationId: getHealthReady
+      responses:
+        "200":
+          description: Todas las dependencias responden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+              examples:
+                listo:
+                  summary: Todo en orden
+                  value:
+                    status: ready
+                    service: orders-service
+                    dependencies:
+                      database: ok
+                      users_service: ok
+        "503":
+          description: Alguna dependencia no responde. El servicio esta degradado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+              examples:
+                usuariosCaido:
+                  summary: El Servicio de Usuarios no responde
+                  value:
+                    status: degraded
+                    service: orders-service
+                    dependencies:
+                      database: ok
+                      users_service: unreachable
+
+  /orders:
+    post:
+      tags: [pedidos]
+      summary: Crear un pedido
+      description: |
+        Crea un pedido para un usuario existente.
+
+        **Secuencia interna:**
+        1. Validacion **local**: lineas no vacias, cantidades y precios enteros
+           positivos, `user_id` con formato UUID. Si falla, responde `400`
+           sin gastar una llamada de red.
+        2. Validacion **remota**: `GET /users/{user_id}` contra el Servicio de
+           Usuarios, con timeout de 2 s y un reintento.
+        3. Persistencia: cabecera y lineas en una sola transaccion.
+
+        Si el paso 2 no puede completarse, **el pedido no se guarda** y se
+        responde `503`. Ante la duda, el sistema no inventa datos.
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+            examples:
+              dosLineas:
+                summary: Pedido con dos lineas
+                value:
+                  user_id: 650d74bf-f45d-4f84-89dd-5bc61cb40a6c
+                  items:
+                    - sku: TECLADO-MEC
+                      quantity: 2
+                      unit_price: 15000
+                    - sku: MOUSE-INAL
+                      quantity: 3
+                      unit_price: 8000
+      responses:
+        "201":
+          description: Pedido creado.
+          headers:
+            Location:
+              description: Ruta del pedido recien creado.
+              schema:
+                type: string
+                examples: ["/orders/a0a17512-af3f-4f34-864e-7a8aeb458cf9"]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: |
+            El pedido esta mal formado. Se rechaza en el dominio, sin consultar
+            al Servicio de Usuarios.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                sinLineas:
+                  summary: empty_order
+                  value:
+                    error: empty_order
+                    message: Un pedido debe tener al menos una linea.
+                cantidadInvalida:
+                  summary: invalid_quantity
+                  value:
+                    error: invalid_quantity
+                    message: "La cantidad de 'SSD-1TB' debe ser un entero mayor que cero (recibido: 0)."
+                precioInvalido:
+                  summary: invalid_price
+                  value:
+                    error: invalid_price
+                    message: "El precio unitario de 'SSD-1TB' debe ser un entero no negativo en la minima unidad monetaria (recibido: 250000.75)."
+                usuarioNoUuid:
+                  summary: invalid_user_id
+                  value:
+                    error: invalid_user_id
+                    message: "El identificador de usuario 'pepito' no es un UUID valido."
+        "422":
+          description: |
+            **El usuario no existe.** El Servicio de Usuarios respondio `404`:
+            es una respuesta confirmada, no una suposicion. La peticion esta
+            bien formada, pero se refiere a un usuario que no esta registrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                usuarioDesconocido:
+                  summary: unknown_user
+                  value:
+                    error: unknown_user
+                    message: "El usuario '00000000-0000-0000-0000-000000000000' no existe en el Servicio de Usuarios."
+        "503":
+          description: |
+            **No se pudo verificar el usuario.** El Servicio de Usuarios no
+            respondio (timeout, conexion rechazada o error `5xx`).
+
+            No es culpa del cliente: sus datos podian ser perfectamente
+            validos. El pedido **no fue creado**.
+          headers:
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar.
+              schema:
+                type: integer
+                examples: [5]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                directorioCaido:
+                  summary: user_directory_unavailable
+                  value:
+                    error: user_directory_unavailable
+                    message: "No se pudo verificar el usuario porque el Servicio de Usuarios no respondio (The operation timed out.). El pedido no fue creado; reintente mas tarde."
+
+    get:
+      tags: [pedidos]
+      summary: Listar pedidos
+      description: Listado paginado, mas recientes primero. Opcionalmente filtrado por usuario.
+      operationId: listOrders
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          description: Filtra los pedidos de un usuario. No se valida contra el Servicio de Usuarios.
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: |
+            Maximo de resultados. Un valor fuera de rango se recorta a los
+            limites, y un valor no numerico se sustituye por el predeterminado:
+            este endpoint no responde `400` por parametros de consulta.
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Listado de pedidos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      tags: [pedidos]
+      summary: Consultar un pedido
+      description: |
+        Devuelve un pedido con sus lineas. **No consulta al Servicio de
+        Usuarios**: las lecturas no dependen del otro microservicio, por lo que
+        siguen funcionando aunque este caido.
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador del pedido.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: El pedido solicitado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: No existe un pedido con ese identificador.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                noEncontrado:
+                  summary: order_not_found
+                  value:
+                    error: order_not_found
+                    message: "No existe un pedido con id '00000000-0000-0000-0000-000000000000'."
+
+components:
+  schemas:
+    Money:
+      type: integer
+      format: int64
+      minimum: 0
+      description: |
+        Importe en la **minima unidad monetaria**, siempre entero.
+        Por ejemplo, `15000` son 15.000 pesos.
+      examples: [15000]
+
+    OrderItemInput:
+      type: object
+      description: Linea de un pedido, tal como la envia el cliente.
+      required: [sku, quantity, unit_price]
+      additionalProperties: false
+      properties:
+        sku:
+          type: string
+          minLength: 1
+          description: Referencia del producto. No puede estar vacia.
+          examples: ["TECLADO-MEC"]
+        quantity:
+          type: integer
+          minimum: 1
+          description: Cantidad. Entero mayor que cero.
+          examples: [2]
+        unit_price:
+          $ref: "#/components/schemas/Money"
+
+    CreateOrderRequest:
+      type: object
+      description: |
+        Observe que **no existe un campo `total`**: el cliente no puede
+        declarar cuanto cuesta su pedido.
+      required: [user_id, items]
+      additionalProperties: false
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: |
+            Usuario dueño del pedido. Debe existir en el Servicio de Usuarios;
+            se comprueba por HTTP antes de persistir.
+          examples: ["650d74bf-f45d-4f84-89dd-5bc61cb40a6c"]
+        items:
+          type: array
+          minItems: 1
+          description: Al menos una linea.
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+
+    OrderItem:
+      type: object
+      description: Linea de un pedido ya creado, con su subtotal calculado.
+      required: [sku, quantity, unit_price, subtotal]
+      properties:
+        sku:
+          type: string
+          examples: ["TECLADO-MEC"]
+        quantity:
+          type: integer
+          examples: [2]
+        unit_price:
+          $ref: "#/components/schemas/Money"
+        subtotal:
+          allOf:
+            - $ref: "#/components/schemas/Money"
+          description: "`quantity x unit_price`, calculado por el servidor."
+
+    Order:
+      type: object
+      required: [id, user_id, status, total, items, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          description: |
+            Se almacena como valor plano, **sin clave foranea**: la tabla de
+            usuarios vive en otra base de datos, gobernada por otro servicio.
+        status:
+          type: string
+          enum: [PENDIENTE, CONFIRMADO, CANCELADO]
+          examples: ["PENDIENTE"]
+        total:
+          allOf:
+            - $ref: "#/components/schemas/Money"
+          description: Suma de los subtotales. Calculado por el dominio.
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      description: |
+        Forma unica de error, compartida por los dos microservicios del taller.
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: |
+            Codigo **estable**, pensado para que un programa lo compare.
+            A diferencia de `message`, no cambia de redaccion.
+          enum:
+            - empty_order
+            - invalid_quantity
+            - invalid_price
+            - invalid_sku
+            - invalid_user_id
+            - order_not_found
+            - unknown_user
+            - user_directory_unavailable
+            - invalid_json
+            - not_found
+            - internal_error
+        message:
+          type: string
+          description: Texto legible para una persona. Puede cambiar sin previo aviso.
+
+    Health:
+      type: object
+      required: [status, service]
+      properties:
+        status:
+          type: string
+          examples: ["ok"]
+        service:
+          type: string
+          examples: ["orders-service"]
+
+    Readiness:
+      type: object
+      required: [status, service, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ready, degraded]
+        service:
+          type: string
+          examples: ["orders-service"]
+        dependencies:
+          type: object
+          description: Estado de cada dependencia, por separado.
+          required: [database, users_service]
+          properties:
+            database:
+              type: string
+              enum: [ok, unreachable]
+            users_service:
+              type: string
+              enum: [ok, unreachable]
