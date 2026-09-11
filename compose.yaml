@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Taller LPA2 - Arquitectura de microservicios
 #
-# Cinco contenedores. Cada microservicio tiene SU PROPIA base de datos y no
+# Cuatro contenedores. Cada microservicio tiene SU PROPIA base de datos y no
 # puede ver la del otro: el patron "database per service". La unica forma de
 # que Pedidos conozca un usuario es preguntandoselo a Usuarios por HTTP.
 # ---------------------------------------------------------------------------

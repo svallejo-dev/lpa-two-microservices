@@ -18,7 +18,7 @@ ORDERS_URL  := http://localhost:8002
 .DEFAULT_GOAL := help
 .PHONY: help doctor up up-users up-orders up-orders-solo down stop clean restart \
         build ps logs logs-users logs-orders test test-users test-orders typecheck \
-        demo demo-fallo psql-users psql-orders urls setup-local api-lint api-docs pdf pdf-evidencia
+        demo demo-fallo psql-users psql-orders urls setup-local api-lint api-docs pdf pdf-evidencia pdf-verificar
 
 # --- Ayuda -----------------------------------------------------------------
 help: ## Muestra esta ayuda
@@ -141,8 +141,8 @@ api-docs: ## Muestra donde consultar el contrato y abre la comparativa
 	@-open $(ORDERS_URL)/docs 2>/dev/null || true
 
 # --- Entregable en PDF -----------------------------------------------------
-pdf: ## Genera el PDF de entrega desde los documentos de docs/
-	@echo "==> 1/3 Renderizando los diagramas Mermaid"
+pdf: ## Genera el PDF de entrega en formato APA 7
+	@echo "==> 1/4 Renderizando los diagramas Mermaid"
 	@mkdir -p entrega/assets
 	@python3 -c "import pathlib,re; t=pathlib.Path('docs/03-arquitectura.md').read_text(); \
 	  [pathlib.Path(f'entrega/assets/d{i}.mmd').write_text(b) \
@@ -151,14 +151,26 @@ pdf: ## Genera el PDF de entrega desde los documentos de docs/
 	  $(DOCKER) run --rm -u 0 -v "$$PWD/entrega/assets":/data minlag/mermaid-cli \
 	    -i /data/$$(basename $$f) -o /data/$$(basename $$f .mmd).png -w 1600 -s 2 -b white >/dev/null 2>&1; \
 	done
-	@echo "==> 2/3 Componiendo el HTML desde docs/"
+	@echo "==> 2/4 Preparando Times New Roman y Courier New (si estan instaladas en macOS)"
+	@mkdir -p entrega/.fuentes
+	@for par in "Times New Roman:TimesNewRoman-Regular" "Times New Roman Bold:TimesNewRoman-Bold" \
+	  "Times New Roman Italic:TimesNewRoman-Italic" "Times New Roman Bold Italic:TimesNewRoman-BoldItalic" \
+	  "Courier New:CourierNew-Regular" "Courier New Bold:CourierNew-Bold"; do \
+	  origen="/System/Library/Fonts/Supplemental/$${par%%:*}.ttf"; \
+	  if [ -f "$$origen" ]; then cp "$$origen" "entrega/.fuentes/$${par##*:}.ttf"; fi; \
+	done
+	@echo "==> 3/4 Componiendo el documento y verificando numeracion y citas"
 	@$(DOCKER) run --rm -v "$$PWD":/w -w /w python:3.13-slim sh -c \
-	  "pip install --quiet markdown 2>/dev/null && python3 scripts/build-pdf.py /w/entrega/assets /w/entrega/entrega.html"
-	@echo "==> 3/3 Generando el PDF con WeasyPrint"
+	  "pip install --quiet --root-user-action=ignore markdown && python3 scripts/build-pdf.py /w/entrega/entrega.html"
+	@echo "==> 4/4 Generando el PDF con WeasyPrint"
 	@$(DOCKER) build -q -f scripts/pdf-renderer.Dockerfile -t lpa-pdf-renderer . >/dev/null
 	@$(DOCKER) run --rm -v "$$PWD":/w -w /w lpa-pdf-renderer \
 	  /w/entrega/entrega.html /w/entrega/Taller-Microservicios-LPA2.pdf 2>/dev/null
 	@echo "  [OK] entrega/Taller-Microservicios-LPA2.pdf"
+	@$(MAKE) --no-print-directory pdf-verificar
+
+pdf-verificar: ## Muestra paginas, tamano de papel y fuentes incrustadas del PDF
+	@$(DOCKER) run --rm -v "$$PWD/entrega":/in -v "$$PWD/scripts":/s:ro alpine sh /s/verificar-pdf.sh
 
 pdf-evidencia: ## Recaptura las salidas reales que el PDF incluye como evidencia (requiere `make up`)
 	@mkdir -p entrega/assets

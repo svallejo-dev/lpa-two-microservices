@@ -10,7 +10,7 @@ al código y GitHub los renderiza sin necesidad de adjuntar imágenes.
 
 ## 1. Diagrama de contenedores
 
-Lo que realmente se ejecuta al lanzar `make up`: cinco contenedores repartidos
+Lo que realmente se ejecuta al lanzar `make up`: cuatro contenedores repartidos
 en tres redes.
 
 ```mermaid

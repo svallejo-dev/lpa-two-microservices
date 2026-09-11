@@ -26,3 +26,6 @@ bun.lockb
 # Intermedio de la generacion del PDF (el PDF final si se versiona)
 entrega/entrega.html
 entrega/assets/*.mmd
+
+# Fuentes del sistema copiadas para generar el PDF (licenciadas, no se redistribuyen)
+entrega/.fuentes/

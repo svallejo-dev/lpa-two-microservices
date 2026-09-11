@@ -22,7 +22,7 @@ Bun ni PostgreSQL: todo —incluidas las pruebas— se ejecuta en contenedores.
 
 ```bash
 make doctor    # comprueba que Docker responde
-make up        # levanta los 5 contenedores
+make up        # levanta los 4 contenedores
 make demo      # recorre el flujo completo y lo explica paso a paso
 ```
 
@@ -203,7 +203,7 @@ casos de uso dependen de interfaces y no de `asyncpg` ni de `fetch`.
 ```
 .
 ├── Makefile                  # punto de entrada único
-├── compose.yaml              # 5 contenedores, 3 redes, 2 volúmenes
+├── compose.yaml              # 4 contenedores, 3 redes, 2 volúmenes
 ├── docs/
 │   ├── 01-cuadro-comparativo.md    # monolito vs. microservicios (10 criterios)
 │   ├── 02-ensayo-microservicios.md # ensayo: por qué las grandes empresas los adoptan
@@ -238,9 +238,11 @@ src/<servicio>/
 ## Entregables del taller
 
 El documento final está en
-**[`entrega/Taller-Microservicios-LPA2.pdf`](entrega/Taller-Microservicios-LPA2.pdf)**
-y se regenera con `make pdf`: no se escribe a mano, se compone desde `docs/`,
-de modo que el entregable y el repositorio no puedan contradecirse.
+**[`entrega/Taller-Microservicios-LPA2.pdf`](entrega/Taller-Microservicios-LPA2.pdf)**,
+en formato **APA 7**, y se regenera con `make pdf`. El cuadro comparativo, el
+ensayo, los diagramas, el fragmento de código y las salidas de ejecución se
+toman del propio repositorio; antes de generar el PDF se verifica que tablas,
+figuras, citas y referencias estén numeradas y correspondidas según APA.
 
 | Actividad solicitada | Archivo |
 |---|---|
