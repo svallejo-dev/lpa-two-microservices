@@ -18,7 +18,7 @@ ORDERS_URL  := http://localhost:8002
 .DEFAULT_GOAL := help
 .PHONY: help doctor up up-users up-orders up-orders-solo down stop clean restart \
         build ps logs logs-users logs-orders test test-users test-orders typecheck \
-        demo demo-fallo psql-users psql-orders urls setup-local api-lint api-docs
+        demo demo-fallo psql-users psql-orders urls setup-local api-lint api-docs pdf pdf-evidencia
 
 # --- Ayuda -----------------------------------------------------------------
 help: ## Muestra esta ayuda
@@ -139,6 +139,34 @@ api-docs: ## Muestra donde consultar el contrato y abre la comparativa
 	@echo "    $(USERS_URL)/docs              $(USERS_URL)/openapi.json"
 	@echo ""
 	@-open $(ORDERS_URL)/docs 2>/dev/null || true
+
+# --- Entregable en PDF -----------------------------------------------------
+pdf: ## Genera el PDF de entrega desde los documentos de docs/
+	@echo "==> 1/3 Renderizando los diagramas Mermaid"
+	@mkdir -p entrega/assets
+	@python3 -c "import pathlib,re; t=pathlib.Path('docs/03-arquitectura.md').read_text(); \
+	  [pathlib.Path(f'entrega/assets/d{i}.mmd').write_text(b) \
+	   for i,b in enumerate(re.findall(r'\x60\x60\x60mermaid\n(.*?)\x60\x60\x60', t, re.S), 1)]"
+	@for f in entrega/assets/d*.mmd; do \
+	  $(DOCKER) run --rm -u 0 -v "$$PWD/entrega/assets":/data minlag/mermaid-cli \
+	    -i /data/$$(basename $$f) -o /data/$$(basename $$f .mmd).png -w 1600 -s 2 -b white >/dev/null 2>&1; \
+	done
+	@echo "==> 2/3 Componiendo el HTML desde docs/"
+	@$(DOCKER) run --rm -v "$$PWD":/w -w /w python:3.13-slim sh -c \
+	  "pip install --quiet markdown 2>/dev/null && python3 scripts/build-pdf.py /w/entrega/assets /w/entrega/entrega.html"
+	@echo "==> 3/3 Generando el PDF con WeasyPrint"
+	@$(DOCKER) run --rm -v "$$PWD":/w -w /w ghcr.io/weasyprint/weasyprint \
+	  /w/entrega/entrega.html /w/entrega/Taller-Microservicios-LPA2.pdf 2>/dev/null
+	@echo "  [OK] entrega/Taller-Microservicios-LPA2.pdf"
+
+pdf-evidencia: ## Recaptura las salidas reales que el PDF incluye como evidencia (requiere `make up`)
+	@mkdir -p entrega/assets
+	@$(COMPOSE) ps --format 'table {{.Service}}\t{{.Status}}'            > entrega/assets/ev-ps.txt
+	@$(MAKE) --no-print-directory test 2>&1 \
+	  | grep -E "==>|^\.+ *\[100%\]|^ [0-9]+ (pass|fail)"              > entrega/assets/ev-test.txt
+	@./scripts/demo.sh 2>&1       | sed $$'s/\033\[[0-9;]*m//g'         > entrega/assets/ev-demo.txt
+	@./scripts/demo-fallo.sh 2>&1 | sed $$'s/\033\[[0-9;]*m//g'         > entrega/assets/ev-fallo.txt
+	@echo "  [OK] evidencia recapturada en entrega/assets/"
 
 # --- Demostraciones --------------------------------------------------------
 demo: ## Recorre el flujo completo: crea usuario, crea pedido, consulta

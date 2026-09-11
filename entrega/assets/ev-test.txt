@@ -1,0 +1,5 @@
+==> Pruebas: Servicio de Usuarios
+................                                                         [100%]
+==> Pruebas: Servicio de Pedidos
+ 21 pass
+ 0 fail

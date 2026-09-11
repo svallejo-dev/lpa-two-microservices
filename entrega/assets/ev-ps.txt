@@ -1,0 +1,5 @@
+SERVICE          STATUS
+orders-db        Up 40 minutes (healthy)
+orders-service   Up 40 minutes (healthy)
+users-db         Up 40 minutes (healthy)
+users-service    Up 40 minutes (healthy)

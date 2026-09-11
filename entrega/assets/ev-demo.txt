@@ -1,0 +1,36 @@
+
+0. Estado de las dos dependencias del Servicio de Pedidos
+   GET http://localhost:8002/health/ready
+   {"status":"ready","service":"orders-service","dependencies":{"database":"ok","users_service":"ok"}}
+      [HTTP 200]
+
+1. Crear un usuario en el Servicio de Usuarios (Python + FastAPI)
+   {"id":"7ca2edfd-8f94-44e0-993f-40bdc9ced8a1","name":"Estudiante LPA2","email":"demo-1789103458@example.com","created_at":"2026-09-11T05:10:58.360924Z"}
+   id del usuario: 7ca2edfd-8f94-44e0-993f-40bdc9ced8a1
+
+2. Crear un pedido en el Servicio de Pedidos (TypeScript + Bun)
+   Pedidos NO tiene la tabla de usuarios: consulta a Usuarios por HTTP antes de insertar.
+   POST http://localhost:8002/orders
+   {"id":"6a42510c-1199-4f39-a9ce-93d979490b0e","user_id":"7ca2edfd-8f94-44e0-993f-40bdc9ced8a1","status":"PENDIENTE","total":54000,"items":[{"sku":"TECLADO","quantity":2,"unit_price":15000,"subtotal":30000},{"sku":"MOUSE","quantity":3,"unit_price":8000,"subtotal":24000}],"created_at":"2026-09-11T05:10:58.396Z"}
+      [HTTP 201]
+   El total (54000) lo calculo el dominio; el cliente nunca lo envio.
+
+3. Consultar los pedidos de ese usuario
+   GET http://localhost:8002/orders?user_id=7ca2edfd-8f94-44e0-993f-40bdc9ced8a1
+   [{"id":"6a42510c-1199-4f39-a9ce-93d979490b0e","user_id":"7ca2edfd-8f94-44e0-993f-40bdc9ced8a1","status":"PENDIENTE","total":54000,"items":[{"sku":"TECLADO","quantity":2,"unit_price":15000,"subtotal":30000},{"sku":"MOUSE","quantity":3,"unit_price":8000,"subtotal":24000}],"created_at":"2026-09-11T05:10:58.396Z"}]
+      [HTTP 200]
+
+4. Intentar un pedido para un usuario que no existe
+   Usuarios responde 404 -> Pedidos lo traduce a 422: los datos del cliente estan mal.
+   POST http://localhost:8002/orders
+   {"error":"unknown_user","message":"El usuario '00000000-0000-0000-0000-000000000000' no existe en el Servicio de Usuarios."}
+      [HTTP 422]
+
+5. Intentar un pedido invalido (sin lineas)
+   Se rechaza en el dominio, sin gastar una llamada de red al otro servicio.
+   POST http://localhost:8002/orders
+   {"error":"empty_order","message":"Un pedido debe tener al menos una linea."}
+      [HTTP 400]
+
+Listo.
+   Para ver que ocurre cuando el Servicio de Usuarios se cae:  make demo-fallo

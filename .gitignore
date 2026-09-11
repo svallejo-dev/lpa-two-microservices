@@ -22,3 +22,7 @@ bun.lockb
 
 # Artefactos
 *.log
+
+# Intermedio de la generacion del PDF (el PDF final si se versiona)
+entrega/entrega.html
+entrega/assets/*.mmd

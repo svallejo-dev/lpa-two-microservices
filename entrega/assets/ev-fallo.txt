@@ -1,0 +1,29 @@
+
+0. Preparacion: un usuario que SI existe
+   id: 255e57c5-9dd2-4def-8743-cafed30aed1c  (este usuario es real, el pedido deberia poder crearse)
+
+1. Apagando el Servicio de Usuarios...
+   Servicio de Usuarios DETENIDO.
+
+2. Intentando crear un pedido de ese mismo usuario valido
+   HTTP/1.1 503 Service Unavailable
+   retry-after: 5
+   {"error":"user_directory_unavailable","message":"No se pudo verificar el usuario porque el Servicio de Usuarios no respondio (The operation timed out.). El pedido no fue creado; reintente mas tarde."}
+   Tardo 5 s: el timeout acota la espera en lugar de colgar la peticion.
+   503, no 400: el problema no son los datos del cliente. Y el pedido NO se guardo.
+
+3. Lo que SIGUE funcionando mientras Usuarios esta caido
+   GET /orders  -> [HTTP 200]
+   Las lecturas de pedidos no dependen de Usuarios: el fallo esta acotado, no tumba el servicio entero.
+
+4. Diagnostico automatico
+   {"status":"degraded","service":"orders-service","dependencies":{"database":"ok","users_service":"unreachable"}}
+   La sonda dice exactamente cual de las dos dependencias fallo.
+
+5. Restaurando el Servicio de Usuarios...
+   Servicio de Usuarios ARRIBA.
+
+6. El mismo pedido, ahora sin cambiar nada en el cliente
+   {"id":"12d2d661-460a-4ba7-aa56-c6a7d99600f9","user_id":"255e57c5-9dd2-4def-8743-cafed30aed1c","status":"PENDIENTE","total":250000,"items":[{"sku":"SSD","quantity":1,"unit_price":250000,"subtotal":250000}],"created_at":"2026-09-11T05:11:06.800Z"}
+      [HTTP 201]
+   Recuperacion automatica: no hubo que reiniciar Pedidos ni limpiar datos a medias.

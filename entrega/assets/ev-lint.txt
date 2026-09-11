@@ -1,0 +1,2 @@
+openapi.yaml: validated in 34ms
+Woohoo! Your API description is valid. 🎉

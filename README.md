@@ -210,6 +210,7 @@ casos de uso dependen de interfaces y no de `asyncpg` ni de `fetch`.
 │   ├── 03-arquitectura.md          # diagramas Mermaid + decisiones de diseño
 │   ├── 04-api-design-first.md      # estándares y herramientas de contrato
 │   └── requests.http               # peticiones de ejemplo
+├── entrega/                  # PDF de entrega (make pdf)
 ├── scripts/                  # demo.sh y demo-fallo.sh
 └── services/
     ├── users-service/        # Python + FastAPI  (spec generado)
@@ -235,6 +236,11 @@ src/<servicio>/
 ---
 
 ## Entregables del taller
+
+El documento final está en
+**[`entrega/Taller-Microservicios-LPA2.pdf`](entrega/Taller-Microservicios-LPA2.pdf)**
+y se regenera con `make pdf`: no se escribe a mano, se compone desde `docs/`,
+de modo que el entregable y el repositorio no puedan contradecirse.
 
 | Actividad solicitada | Archivo |
 |---|---|
