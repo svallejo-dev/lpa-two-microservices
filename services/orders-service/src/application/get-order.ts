@@ -1,5 +1,3 @@
-/** Caso de uso: consultar un pedido por id. */
-
 import { OrderNotFoundError } from "../domain/errors";
 import type { Order } from "../domain/order";
 import type { OrderRepository } from "../domain/order-repository";

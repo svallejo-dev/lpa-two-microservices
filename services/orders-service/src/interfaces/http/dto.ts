@@ -1,5 +1,3 @@
-/** Traduccion entre JSON y el dominio, en la frontera HTTP. */
-
 import type { Order } from "../../domain/order";
 import type { OrderItemInput } from "../../domain/order";
 
@@ -8,13 +6,6 @@ export interface CreateOrderBody {
   items: Array<{ sku: string; quantity: number; unit_price: number }>;
 }
 
-/**
- * Pasa el JSON crudo a la forma que entiende el dominio.
- *
- * No valida nada: validar es trabajo del dominio. Aqui solo se renombran
- * campos (snake_case en el JSON publico, camelCase adentro) para que el
- * contrato de la API pueda evolucionar sin arrastrar al dominio.
- */
 export function toCreateOrderCommand(body: CreateOrderBody): {
   userId: string;
   items: OrderItemInput[];

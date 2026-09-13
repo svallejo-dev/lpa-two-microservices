@@ -1,11 +1,3 @@
-/**
- * Composition root.
- *
- * El unico lugar donde se eligen implementaciones concretas: Postgres para la
- * persistencia y REST para el directorio de usuarios. Los casos de uso reciben
- * los puertos ya resueltos y nunca saben cual llego.
- */
-
 import type { SQL } from "bun";
 
 import { CreateOrder } from "../../application/create-order";
@@ -27,7 +19,6 @@ export interface Container {
 export function buildContainer(config: Config): Container {
   const sql = createPool(config.databaseUrl);
 
-  // Adaptadores concretos: cambiarlos aqui no obliga a tocar el dominio.
   const orders = new PostgresOrderRepository(sql);
   const userDirectory = new HttpUserDirectory(
     config.usersServiceUrl,

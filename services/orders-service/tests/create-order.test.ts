@@ -42,9 +42,6 @@ describe("CreateOrder", () => {
   });
 
   test("si el Servicio de Usuarios esta caido, falla sin persistir el pedido", async () => {
-    // La garantia importante: ante la duda, el sistema NO inventa datos. No
-    // guarda un pedido "a ver si luego valida": se rechaza la operacion
-    // completa y se le dice al cliente que reintente.
     const orders = new InMemoryOrderRepository();
     const useCase = new CreateOrder(orders, new BrokenUserDirectory());
 
@@ -54,7 +51,6 @@ describe("CreateOrder", () => {
   });
 
   test("no llama al Servicio de Usuarios si el pedido ya es invalido", async () => {
-    // Validacion local primero: se ahorra una llamada de red inutil.
     const directory = new FakeUserDirectory(USER);
     const useCase = new CreateOrder(new InMemoryOrderRepository(), directory);
 

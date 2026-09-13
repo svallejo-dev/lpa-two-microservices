@@ -1,17 +1,3 @@
-/**
- * Publicacion del contrato.
- *
- * El spec se lee UNA vez del archivo `openapi.yaml` escrito a mano y se
- * expone en dos representaciones del mismo documento:
- *
- *   GET /openapi.yaml  -> el archivo tal cual, como se versiona en git
- *   GET /openapi.json  -> el mismo contenido en JSON, que es lo que consumen
- *                         los renderizadores y los generadores de clientes
- *
- * Bun trae analizador de YAML incorporado (`Bun.YAML`), asi que esto no
- * agrega ninguna dependencia.
- */
-
 const SPEC_FILE = `${import.meta.dir}/../../../openapi.yaml`;
 
 export const specYaml: string = await Bun.file(SPEC_FILE).text();
@@ -26,7 +12,6 @@ export function yamlResponse(): Response {
   return new Response(specYaml, {
     headers: {
       "content-type": "application/yaml; charset=utf-8",
-      // Permite que un renderizador servido desde otro origen lea el contrato.
       "access-control-allow-origin": "*",
     },
   });

@@ -1,10 +1,3 @@
-/**
- * Errores de negocio del Servicio de Pedidos.
- *
- * Capa de DOMINIO: no conocen HTTP ni SQL. Cada uno lleva un `code` estable
- * que `interfaces/http/error-mapper.ts` traduce a un codigo de estado.
- */
-
 export abstract class DomainError extends Error {
   abstract readonly code: string;
 
@@ -14,7 +7,6 @@ export abstract class DomainError extends Error {
   }
 }
 
-/** Un pedido sin lineas no es un pedido. */
 export class EmptyOrderError extends DomainError {
   readonly code = "empty_order";
   constructor() {
@@ -60,10 +52,6 @@ export class OrderNotFoundError extends DomainError {
   }
 }
 
-/**
- * El usuario NO existe. Es una respuesta confirmada del Servicio de Usuarios:
- * sabemos con certeza que ese usuario no esta registrado.
- */
 export class UnknownUserError extends DomainError {
   readonly code = "unknown_user";
   constructor(readonly userId: string) {
@@ -71,15 +59,6 @@ export class UnknownUserError extends DomainError {
   }
 }
 
-/**
- * NO SABEMOS si el usuario existe: el Servicio de Usuarios no respondio.
- *
- * Distinguir este caso del anterior es la decision de diseno mas importante
- * del servicio. "No existe" es una respuesta del negocio (el cliente debe
- * corregir los datos); "no pude preguntar" es un fallo de infraestructura (el
- * cliente debe reintentar mas tarde). Confundirlos llevaria a rechazar pedidos
- * de usuarios perfectamente validos cada vez que la red falla.
- */
 export class UserDirectoryUnavailableError extends DomainError {
   readonly code = "user_directory_unavailable";
   constructor(readonly reason: string) {

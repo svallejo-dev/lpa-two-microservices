@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     database_url: str = "postgres://users_app:users_secret@localhost:5432/users_db"
     log_level: str = "info"
 
-    # Tamanos del pool de conexiones a Postgres.
     db_pool_min_size: int = 1
     db_pool_max_size: int = 10
 

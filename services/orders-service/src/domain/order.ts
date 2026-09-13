@@ -1,11 +1,3 @@
-/**
- * Entidades del dominio de Pedidos.
- *
- * Los importes se manejan como ENTEROS en la minima unidad monetaria (por
- * ejemplo, pesos sin decimales o centavos). Nunca como `float`: sumar dinero
- * en coma flotante introduce errores de redondeo que el negocio no perdona.
- */
-
 import {
   EmptyOrderError,
   InvalidPriceError,
@@ -46,7 +38,6 @@ export class OrderItem {
     return new OrderItem(sku, input.quantity, input.unitPrice);
   }
 
-  /** Reconstruye desde persistencia, sin revalidar. */
   static rehydrate(sku: string, quantity: number, unitPrice: number): OrderItem {
     return new OrderItem(sku, quantity, unitPrice);
   }
@@ -66,13 +57,6 @@ export class Order {
     readonly createdAt: Date,
   ) {}
 
-  /**
-   * Crea un pedido nuevo.
-   *
-   * El TOTAL lo calcula el dominio a partir de las lineas: nunca se acepta el
-   * total que envie el cliente. Es la regla que impide que alguien pida
-   * mercancia cara declarando que cuesta cero.
-   */
   static place(userId: string, items: readonly OrderItemInput[]): Order {
     if (!UUID_PATTERN.test(String(userId ?? ""))) {
       throw new InvalidUserIdError(String(userId));

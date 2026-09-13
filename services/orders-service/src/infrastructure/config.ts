@@ -1,5 +1,3 @@
-/** Configuracion por variables de entorno (12-factor). */
-
 export interface Config {
   port: number;
   databaseUrl: string;
@@ -30,8 +28,6 @@ export function loadConfig(): Config {
     usersServiceUrl: env("USERS_SERVICE_URL", "http://localhost:8001").replace(/\/+$/, ""),
     userDirectoryTimeoutMs: envInt("USER_DIRECTORY_TIMEOUT_MS", 2000),
     userDirectoryRetries: envInt("USER_DIRECTORY_RETRIES", 1),
-    // La documentacion se publica por defecto porque este es un proyecto
-    // academico; en produccion se apagaria con DOCS_ENABLED=false.
     docsEnabled: env("DOCS_ENABLED", "true") !== "false",
     logLevel: env("LOG_LEVEL", "info"),
   };

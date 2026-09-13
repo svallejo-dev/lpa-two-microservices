@@ -1,5 +1,3 @@
-/** Caso de uso: listar pedidos, opcionalmente filtrando por usuario. */
-
 import type { Order } from "../domain/order";
 import type { OrderRepository } from "../domain/order-repository";
 

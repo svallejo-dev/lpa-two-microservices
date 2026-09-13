@@ -1,13 +1,5 @@
-# ===========================================================================
-#  Taller LPA2 - Arquitectura de microservicios
-#  Punto de entrada unico del monorepo.  Ejecuta `make` para ver la ayuda.
-# ===========================================================================
 SHELL := /bin/bash
 
-# Docker Desktop en macOS no siempre queda en el PATH de la shell. Se exporta
-# para los scripts de scripts/, y ademas se resuelve el binario a ruta absoluta
-# porque GNU Make 3.81 (el que trae macOS) ejecuta los comandos simples sin
-# pasar por la shell, con una copia del PATH tomada al arrancar.
 export PATH := $(PATH):/Applications/Docker.app/Contents/Resources/bin
 DOCKER      := $(shell command -v docker 2>/dev/null || echo /Applications/Docker.app/Contents/Resources/bin/docker)
 
@@ -20,7 +12,6 @@ ORDERS_URL  := http://localhost:8002
         build ps logs logs-users logs-orders test test-users test-orders typecheck \
         demo demo-fallo psql-users psql-orders urls setup-local api-lint api-docs pdf pdf-evidencia pdf-verificar
 
-# --- Ayuda -----------------------------------------------------------------
 help: ## Muestra esta ayuda
 	@echo ""
 	@echo "  Taller LPA2 - Microservicios (Usuarios: FastAPI  |  Pedidos: Bun)"
@@ -29,7 +20,6 @@ help: ## Muestra esta ayuda
 	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
-# --- Requisitos ------------------------------------------------------------
 doctor: ## Verifica que Docker y Compose esten disponibles
 	@echo "==> Comprobando entorno"
 	@command -v docker >/dev/null 2>&1 || { \
@@ -46,7 +36,6 @@ doctor: ## Verifica que Docker y Compose esten disponibles
 .env:
 	@cp .env.example .env && echo "==> .env creado a partir de .env.example"
 
-# --- Levantar --------------------------------------------------------------
 up: .env doctor ## Levanta AMBOS microservicios con sus bases de datos
 	@$(COMPOSE) up -d --build
 	@$(MAKE) --no-print-directory urls
@@ -68,7 +57,6 @@ up-orders-solo: .env ## Levanta Pedidos AISLADO, sin Usuarios (para demostrar el
 build: .env ## Construye las imagenes sin levantar nada
 	@$(COMPOSE) build
 
-# --- Apagar ----------------------------------------------------------------
 stop: ## Detiene los contenedores sin borrarlos
 	@$(COMPOSE) stop
 
@@ -81,7 +69,6 @@ clean: ## Baja todo y BORRA los volumenes de las bases de datos
 
 restart: down up ## Reinicia el entorno completo
 
-# --- Observar --------------------------------------------------------------
 ps: ## Estado de los contenedores
 	@$(COMPOSE) ps
 
@@ -100,7 +87,6 @@ urls: ## Muestra las URLs publicadas
 	@echo "  Pedidos  (Bun)     : $(ORDERS_URL)"
 	@echo ""
 
-# --- Pruebas ---------------------------------------------------------------
 test: test-users test-orders ## Ejecuta las pruebas de los dos servicios
 
 test-users: ## Pruebas de dominio y casos de uso de Usuarios (sin BD ni red)
@@ -117,7 +103,6 @@ test-orders: ## Pruebas de dominio y casos de uso de Pedidos (sin BD ni red)
 	@$(DOCKER) build --quiet --target dev -t lpa-orders-tests ./services/orders-service >/dev/null
 	@$(DOCKER) run --rm lpa-orders-tests bun test
 
-# --- Contrato de la API (design first) -------------------------------------
 api-lint: ## Valida el contrato openapi.yaml con Redocly CLI
 	@echo "==> Validando el contrato del Servicio de Pedidos"
 	@$(DOCKER) run --rm -v "$$PWD/services/orders-service":/spec -w /spec node:22-alpine \
@@ -140,7 +125,6 @@ api-docs: ## Muestra donde consultar el contrato y abre la comparativa
 	@echo ""
 	@-open $(ORDERS_URL)/docs 2>/dev/null || true
 
-# --- Entregable en PDF -----------------------------------------------------
 pdf: ## Genera el PDF de entrega en formato APA 7
 	@echo "==> 1/4 Renderizando los diagramas Mermaid"
 	@mkdir -p entrega/assets
@@ -181,21 +165,18 @@ pdf-evidencia: ## Recaptura las salidas reales que el PDF incluye como evidencia
 	@./scripts/demo-fallo.sh 2>&1 | sed $$'s/\033\[[0-9;]*m//g'         > entrega/assets/ev-fallo.txt
 	@echo "  [OK] evidencia recapturada en entrega/assets/"
 
-# --- Demostraciones --------------------------------------------------------
 demo: ## Recorre el flujo completo: crea usuario, crea pedido, consulta
 	@./scripts/demo.sh
 
 demo-fallo: ## Apaga Usuarios y muestra como Pedidos degrada a 503
 	@./scripts/demo-fallo.sh
 
-# --- Bases de datos --------------------------------------------------------
 psql-users: ## Abre psql contra la base de Usuarios
 	@$(COMPOSE) exec users-db psql -U $${USERS_DB_USER:-users_app} -d $${USERS_DB_NAME:-users_db}
 
 psql-orders: ## Abre psql contra la base de Pedidos
 	@$(COMPOSE) exec orders-db psql -U $${ORDERS_DB_USER:-orders_app} -d $${ORDERS_DB_NAME:-orders_db}
 
-# --- Opcional --------------------------------------------------------------
 setup-local: ## (Opcional) Instala Bun y Python en el host para editar con autocompletado
 	@command -v brew >/dev/null || { echo "Se requiere Homebrew"; exit 1; }
 	@brew install oven-sh/bun/bun python@3.13

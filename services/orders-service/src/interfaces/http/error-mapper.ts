@@ -1,11 +1,3 @@
-/**
- * Traduccion de errores de dominio a codigos HTTP.
- *
- * La fila importante es la ultima: `user_directory_unavailable` -> 503.
- * Un 4xx le diria al cliente "corrige tus datos" cuando sus datos estaban
- * bien; el 503 le dice la verdad: "el problema es nuestro, reintenta".
- */
-
 import {
   DomainError,
   EmptyOrderError,
@@ -25,10 +17,7 @@ const STATUS_BY_ERROR = new Map<Function, number>([
   [InvalidSkuError, 400],
   [InvalidUserIdError, 400],
   [OrderNotFoundError, 404],
-  // 422: la peticion esta bien formada, pero se refiere a un usuario que no
-  // existe. Es un problema de datos del cliente, no de sintaxis.
   [UnknownUserError, 422],
-  // 503: no es culpa del cliente. Se acompana de Retry-After.
   [UserDirectoryUnavailableError, 503],
 ]);
 

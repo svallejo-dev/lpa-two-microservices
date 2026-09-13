@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# ---------------------------------------------------------------------------
-# Demuestra la desventaja mas citada de los microservicios: un servicio depende
-# de otro, y ese otro se puede caer.
-#
-# Lo que se quiere mostrar no es que falle, sino COMO falla: rapido, con un
-# codigo de estado honesto y sin dejar datos inconsistentes.
-# ---------------------------------------------------------------------------
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

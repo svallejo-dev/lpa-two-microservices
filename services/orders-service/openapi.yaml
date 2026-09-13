@@ -1,16 +1,3 @@
-# ===========================================================================
-#  CONTRATO del Servicio de Pedidos  ·  OpenAPI 3.1.0
-#
-#  Este archivo esta ESCRITO A MANO y es la fuente de verdad de la API.
-#  No lo genera ningun framework a partir del codigo: es al reves, el codigo
-#  debe cumplirlo. `tests/openapi.test.ts` falla si ambos se desvian.
-#
-#  Contraste deliberado dentro de este mismo repositorio:
-#    - Servicio de Usuarios (FastAPI) -> CODE FIRST: el spec es un subproducto
-#      generado en /openapi.json a partir de las anotaciones del codigo.
-#    - Servicio de Pedidos (este)     -> DESIGN FIRST: el spec se escribe
-#      primero y el codigo se valida contra el.
-# ===========================================================================
 openapi: 3.1.0
 
 info:
@@ -48,10 +35,6 @@ info:
   contact:
     name: Taller LPA2 - Lenguaje de Programacion Avanzado 2
 
-# Esta API no exige autenticacion. `security: []` lo dice de forma explicita
-# en lugar de dejarlo ambiguo por omision: es un ejercicio academico y los dos
-# servicios viven en una red privada de Docker. En un sistema real este es
-# justamente el punto donde se declararia el esquema (OAuth2, mTLS, API key).
 security: []
 
 servers:

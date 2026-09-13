@@ -1,14 +1,6 @@
-# ---------------------------------------------------------------------------
-# Taller LPA2 - Arquitectura de microservicios
-#
-# Cuatro contenedores. Cada microservicio tiene SU PROPIA base de datos y no
-# puede ver la del otro: el patron "database per service". La unica forma de
-# que Pedidos conozca un usuario es preguntandoselo a Usuarios por HTTP.
-# ---------------------------------------------------------------------------
 name: lpa-microservicios
 
 services:
-  # --- Base de datos privada del Servicio de Usuarios -----------------------
   users-db:
     image: postgres:17-alpine
     environment:
@@ -26,7 +18,6 @@ services:
       retries: 12
     restart: unless-stopped
 
-  # --- Servicio de Usuarios (Python + FastAPI) ------------------------------
   users-service:
     build:
       context: ./services/users-service
@@ -48,7 +39,6 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # --- Base de datos privada del Servicio de Pedidos ------------------------
   orders-db:
     image: postgres:17-alpine
     environment:
@@ -66,7 +56,6 @@ services:
       retries: 12
     restart: unless-stopped
 
-  # --- Servicio de Pedidos (TypeScript + Bun) -------------------------------
   orders-service:
     build:
       context: ./services/orders-service
@@ -82,9 +71,6 @@ services:
     depends_on:
       orders-db:
         condition: service_healthy
-      # Dependencia entre microservicios: Pedidos necesita a Usuarios para
-      # validar. `required: false` permite levantar Pedidos aislado
-      # (`make up-orders-solo`) y demostrar la degradacion controlada a 503.
       users-service:
         condition: service_healthy
         required: false
@@ -96,18 +82,6 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-# ---------------------------------------------------------------------------
-# Redes: el aislamiento de datos no se deja a la buena voluntad del codigo.
-#
-#   users-data  -> solo users-service y su base
-#   orders-data -> solo orders-service y su base
-#   services    -> unico canal entre los dos microservicios (HTTP)
-#
-# Consecuencia: orders-service NO TIENE RUTA DE RED hacia users-db. Aunque
-# alguien escribiera la cadena de conexion correcta en el codigo, el paquete
-# no llegaria. La frontera del microservicio es fisica, no una convencion.
-# Las redes de datos son `internal`: sin salida a internet.
-# ---------------------------------------------------------------------------
 networks:
   users-data:
     internal: true

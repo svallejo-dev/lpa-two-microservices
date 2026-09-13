@@ -9,8 +9,6 @@ from uuid import UUID, uuid4
 
 from .errors import EmptyNameError, InvalidEmailError, NameTooLongError
 
-# Validacion deliberadamente pragmatica: el objetivo es proteger la invariante,
-# no reimplementar el RFC 5322.
 _EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 MAX_NAME_LENGTH = 120

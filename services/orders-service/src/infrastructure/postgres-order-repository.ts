@@ -1,10 +1,3 @@
-/**
- * Adaptador de `OrderRepository` sobre PostgreSQL.
- *
- * Unico archivo del servicio que sabe SQL. Implementa el puerto declarado en
- * `domain/order-repository.ts`.
- */
-
 import type { SQL } from "bun";
 
 import type { OrderStatus } from "../domain/order";
@@ -20,7 +13,6 @@ interface OrderRow {
   items: Array<{ sku: string; quantity: number; unit_price: string | number | bigint }>;
 }
 
-/** Postgres devuelve BIGINT como texto o BigInt segun el driver. */
 function toNumber(value: string | number | bigint): number {
   return typeof value === "number" ? value : Number(value);
 }
@@ -40,8 +32,6 @@ function toEntity(row: OrderRow): Order {
   );
 }
 
-// Las lineas se agregan en JSON para traer el pedido completo en una sola
-// consulta, evitando el problema N+1 de pedir los items pedido por pedido.
 const SELECT_ORDERS = `
   SELECT o.id,
          o.user_id,
@@ -66,9 +56,6 @@ export class PostgresOrderRepository implements OrderRepository {
   constructor(private readonly sql: SQL) {}
 
   async add(order: Order): Promise<void> {
-    // Cabecera y lineas se escriben en UNA transaccion: o queda el pedido
-    // completo o no queda nada. Dentro de un mismo servicio la atomicidad
-    // sigue siendo trivial; lo dificil es entre servicios.
     await this.sql.begin(async (tx: SQL) => {
       await tx`
         INSERT INTO orders (id, user_id, total, status, created_at)

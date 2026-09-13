@@ -54,20 +54,15 @@ FUENTES = ENTREGA / ".fuentes"
 
 REPO_URL = "https://github.com/svallejo-dev/lpa-two-microservices"
 
-# Para fijar el enlace de la sustentacion: escribalo aqui y ejecute `make pdf`.
 VIDEO_URL = ""
 
-# --- Portada (APA 7, trabajo de estudiante) ---------------------------------
 TITULO = "Arquitectura Orientada a Microservicios"
 ESTUDIANTE = "Sebastián Vallejo"
 AFILIACION = "Ingeniería de Sistemas Mod. Virtual, Uniremington"
 ASIGNATURA = "Lenguaje de Programación Avanzado 2"
 DOCENTE = "Nixon Duarte Acosta"
-# APA 7 pide la fecha de entrega completa (p. ej., "18 de septiembre de 2026").
-# Se conserva el ano porque fue el dato indicado para la portada.
 FECHA = "2026"
 
-# (apellido, ano, referencia en HTML), en orden alfabetico.
 REFERENCIAS = [
     ("Conway", "1968",
      "Conway, M. E. (1968). How do committees invent? <em>Datamation, 14</em>(4), 28–31."),
@@ -97,7 +92,6 @@ REFERENCIAS = [
 ]
 
 
-# --- Utilidades ------------------------------------------------------------
 def url(direccion: str, en_texto: bool = False) -> str:
     clase = "url-texto" if en_texto else "url"
     return f'<a class="{clase}" href="{direccion}">{direccion}</a>'
@@ -156,7 +150,6 @@ def salida_terminal(nombre: str) -> str:
     return f'<pre class="codigo">{html.escape(texto)}</pre>'
 
 
-# --- Contenido tomado del repositorio --------------------------------------
 def filas_cuadro():
     filas = []
     for linea in (DOCS / "01-cuadro-comparativo.md").read_text(encoding="utf-8").splitlines():
@@ -172,7 +165,6 @@ def interpretacion_cuadro():
     bloque = texto.split("## Lectura del cuadro", 1)[1]
     parrafos = [re.sub(r"^>\s*", "", " ".join(l.strip() for l in b.splitlines()))
                 for b in bloque.split("\n\n") if b.strip()]
-    # La frase destacada del documento se integra a la oracion que la introduce.
     unidos = []
     for par in parrafos:
         if unidos and unidos[-1].endswith(":"):
@@ -287,7 +279,6 @@ pre.codigo { font-family: "Courier New", "Liberation Mono", monospace; font-size
 """
 
 
-# --- Secciones ---------------------------------------------------------------
 def portada():
     return ('<div class="portada">'
             f'<p class="titulo">{TITULO}</p><p>&nbsp;</p>'
@@ -465,7 +456,11 @@ def evidencia():
         figura(4, "Caso de Uso de Creación de un Pedido",
                f'<pre class="codigo">{html.escape(metodo_execute())}</pre>',
                "Fragmento del archivo "
-               "<code>services/orders-service/src/application/create-order.ts</code>."),
+               "<code>services/orders-service/src/application/create-order.ts</code>. El método "
+               "ejecuta tres pasos: valida el pedido localmente, de modo que uno mal formado se "
+               "rechaza sin gastar una llamada de red; consulta al Servicio de Usuarios a través "
+               "del puerto <code>UserDirectory</code>, que lanza una excepción si no obtiene "
+               "respuesta; y solo entonces lo persiste."),
         "<h2>Resultados de la Ejecución</h2>",
         parrafo("Las salidas que se presentan a continuación se capturaron del sistema en "
                 "funcionamiento. La Figura 5 muestra los cuatro contenedores en estado saludable y "
@@ -507,7 +502,6 @@ def referencias():
             + "".join(f"<p>{con_urls(r)}</p>" for _, _, r in REFERENCIAS) + "</div>")
 
 
-# --- Verificacion APA ------------------------------------------------------
 def verificar(documento: str) -> list:
     problemas = []
     etiqueta = re.compile(r'<p class="etiqueta">[^<]*</p>')

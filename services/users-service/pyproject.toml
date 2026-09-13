@@ -5,7 +5,6 @@ description = "Microservicio de Usuarios - Taller LPA2"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
-# `auto` evita decorar cada prueba async con @pytest.mark.asyncio.
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-q"

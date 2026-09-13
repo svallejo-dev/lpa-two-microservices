@@ -16,8 +16,6 @@ def test_registra_un_usuario_valido() -> None:
     user = User.register(name="Sebastian Vallejo", email="Sebastian@Example.com")
 
     assert user.name == "Sebastian Vallejo"
-    # El dominio normaliza el correo a minusculas: esa es la invariante en la
-    # que confia el esquema de la base de datos.
     assert user.email == "sebastian@example.com"
     assert user.id is not None
 

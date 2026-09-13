@@ -1,16 +1,3 @@
-/**
- * Renderizadores de documentacion.
- *
- * Las cinco paginas de abajo leen EXACTAMENTE el mismo `/openapi.json`. Esa es
- * la demostracion del principio API Design First: el contrato es el activo, y
- * la forma de presentarlo es intercambiable. Cambiar de renderizador no toca
- * ni una linea del servicio.
- *
- * Los renderizadores se cargan desde un CDN, asi que estas paginas necesitan
- * internet EN EL NAVEGADOR (no en el contenedor). El contrato en si
- * -`/openapi.json` y `/openapi.yaml`- se sirve siempre sin conexion.
- */
-
 const SPEC_URL = "/openapi.json";
 
 function htmlResponse(html: string): Response {
@@ -19,7 +6,6 @@ function htmlResponse(html: string): Response {
   });
 }
 
-/** Barra comun para poder saltar entre renderizadores sin perderse. */
 const NAV = `
 <nav class="lpa-nav">
   <a href="/docs">&larr; comparar</a>
@@ -39,7 +25,6 @@ const NAV = `
   body{margin-top:34px!important}
 </style>`;
 
-// --- 1. Scalar -------------------------------------------------------------
 export const scalarPage = () =>
   htmlResponse(`<!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -49,7 +34,6 @@ ${NAV}
 <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
 </body></html>`);
 
-// --- 2. Redoc --------------------------------------------------------------
 export const redocPage = () =>
   htmlResponse(`<!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -59,7 +43,6 @@ ${NAV}
 <script src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"></script>
 </body></html>`);
 
-// --- 3. RapiDoc ------------------------------------------------------------
 export const rapidocPage = () =>
   htmlResponse(`<!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -72,7 +55,6 @@ ${NAV}
   primary-color="#2d6a4f" style="height:calc(100vh - 34px)"></rapi-doc>
 </body></html>`);
 
-// --- 4. Stoplight Elements -------------------------------------------------
 export const elementsPage = () =>
   htmlResponse(`<!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -84,7 +66,6 @@ ${NAV}
 <elements-api apiDescriptionUrl="${SPEC_URL}" router="hash" layout="sidebar"></elements-api>
 </body></html>`);
 
-// --- 5. Swagger UI (la referencia con la que comparar) ---------------------
 export const swaggerPage = () =>
   htmlResponse(`<!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -99,7 +80,6 @@ ${NAV}
 </script>
 </body></html>`);
 
-// --- Indice: la pagina que explica el principio ----------------------------
 const RENDERERS = [
   {
     slug: "scalar",

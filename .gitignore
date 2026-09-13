@@ -1,7 +1,5 @@
-# Entorno local
 .env
 
-# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -9,23 +7,18 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Node / Bun
 node_modules/
 bun.lockb
 *.tsbuildinfo
 
-# Editores / SO
 .DS_Store
 .idea/
 .vscode/*
 !.vscode/extensions.json
 
-# Artefactos
 *.log
 
-# Intermedio de la generacion del PDF (el PDF final si se versiona)
 entrega/entrega.html
 entrega/assets/*.mmd
 
-# Fuentes del sistema copiadas para generar el PDF (licenciadas, no se redistribuyen)
 entrega/.fuentes/

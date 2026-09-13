@@ -1,9 +1,4 @@
 #!/bin/sh
-# ---------------------------------------------------------------------------
-# Verificacion mecanica del PDF de entrega: numero de paginas, tamano de cada
-# pagina y fuentes realmente incrustadas. Se ejecuta dentro de un contenedor
-# Alpine con `make pdf-verificar`.
-# ---------------------------------------------------------------------------
 set -e
 PDF="${1:-/in/Taller-Microservicios-LPA2.pdf}"
 apk add --no-cache poppler-utils >/dev/null 2>&1

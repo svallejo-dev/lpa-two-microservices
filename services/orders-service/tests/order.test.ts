@@ -24,8 +24,6 @@ describe("Order", () => {
   });
 
   test("ignora cualquier total que venga desde fuera", () => {
-    // `Order.place` no recibe un parametro `total`: por construccion, el
-    // cliente no puede dictar cuanto cuesta su pedido.
     const order = Order.place(USER_ID, [{ sku: "SSD", quantity: 1, unitPrice: 250_000 }]);
     expect(order.total).toBe(250_000);
   });

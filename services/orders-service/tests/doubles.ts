@@ -1,12 +1,3 @@
-/**
- * Dobles de prueba de los dos puertos del servicio.
- *
- * `FakeUserDirectory` es el que hace valioso todo el diseno: permite probar
- * "que pasa cuando el Servicio de Usuarios se cae" sin levantar Docker, sin
- * red y en milisegundos. Con un `fetch` incrustado dentro del caso de uso,
- * ese escenario solo se podria probar apagando contenedores a mano.
- */
-
 import { UserDirectoryUnavailableError } from "../src/domain/errors";
 import type { Order } from "../src/domain/order";
 import type { OrderRepository } from "../src/domain/order-repository";
@@ -30,7 +21,6 @@ export class InMemoryOrderRepository implements OrderRepository {
   }
 }
 
-/** El usuario existe. */
 export class FakeUserDirectory implements UserDirectory {
   calls = 0;
 
@@ -42,14 +32,12 @@ export class FakeUserDirectory implements UserDirectory {
   }
 }
 
-/** El Servicio de Usuarios responde, y responde que el usuario no existe. */
 export class EmptyUserDirectory implements UserDirectory {
   async findById(): Promise<KnownUser | null> {
     return null;
   }
 }
 
-/** El Servicio de Usuarios esta caido: no se puede saber nada. */
 export class BrokenUserDirectory implements UserDirectory {
   async findById(): Promise<KnownUser | null> {
     throw new UserDirectoryUnavailableError("connection refused");

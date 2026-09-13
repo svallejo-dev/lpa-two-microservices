@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# ---------------------------------------------------------------------------
-# Recorrido completo del sistema. Pensado para proyectarlo durante la
-# sustentacion: cada paso imprime la peticion y la respuesta.
-# ---------------------------------------------------------------------------
 set -euo pipefail
 
 USERS="${USERS_URL:-http://localhost:8001}"
@@ -11,7 +7,6 @@ ORDERS="${ORDERS_URL:-http://localhost:8002}"
 bold() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 note() { printf '   \033[2m%s\033[0m\n' "$1"; }
 
-# Imprime cuerpo y codigo de estado de una peticion.
 call() {
   local method="$1" url="$2" body="${3:-}"
   printf '   \033[36m%s %s\033[0m\n' "$method" "$url"
