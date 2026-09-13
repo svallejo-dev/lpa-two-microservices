@@ -494,6 +494,9 @@ def video():
                 "de negocio y el comportamiento del sistema cuando el Servicio de Usuarios deja de "
                 "responder. La grabación está disponible en el siguiente enlace:"),
         parrafo(enlace, sangria=False),
+        parrafo("El código fuente al que se refiere la sustentación, junto con este documento y "
+                "su historial de commits, está disponible en el repositorio del proyecto:"),
+        parrafo(url(REPO_URL, en_texto=True), sangria=False),
     ])
 
 
