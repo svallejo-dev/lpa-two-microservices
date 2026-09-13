@@ -54,7 +54,7 @@ FUENTES = ENTREGA / ".fuentes"
 
 REPO_URL = "https://github.com/svallejo-dev/lpa-two-microservices"
 
-VIDEO_URL = ""
+VIDEO_URL = "https://youtu.be/t6DTXp7V4aU"
 
 TITULO = "Arquitectura Orientada a Microservicios"
 ESTUDIANTE = "Sebastián Vallejo"
